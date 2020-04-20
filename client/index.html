@@ -16,6 +16,10 @@
 
   <nav class="navbar navbar-dark bg-dark">
     <a class="navbar-brand" href="#">Ari's XCStats Uploader</a>
+    <div class="form-inline">
+
+      <button id="xu-signOutButton" class="btn btn-outline-warning my-2 my-sm-0">Log Out</button>
+    </div>
   </nav>
 
   <br><br>
@@ -158,7 +162,7 @@
   <div class="xu-pageHeight" id="xu-s-spacer">
   </div>
   <div class="container">
-    <button class="btn btn-outline-danger" id="xu-settingsButton">Manage User Data / Delete Account</button>
+    <button class="btn btn-outline-danger" id="xu-settingsButton">Manage User Data / Delete Account</button>&nbsp;&nbsp;<a target="_blank" href="https://github.com/stassinopoulosari/XCStatsUploader-ui">This UI is an open-source project. Check it out on GitHub!</a>
   </div>
   <br>
   <br>
@@ -172,7 +176,7 @@
     <div id="template-activity">
       <li class="list-group-item">
         <div class="row">
-          <div class="col-lg-4"><a href="%url%" class="xu-btn-leftAlign form-control btn"><b>%type%: %title%</b></a></div>
+          <div class="col-lg-4"><a target="_blank" href="%url%" class="xu-btn-leftAlign form-control btn"><b>%type%: %title%</b></a></div>
           <div class="col-lg-6"><span class="form-control xu-formInfo btn">%summary%</span></div>
           <div class="col-lg-2 input-group"><button %disabled% class="form-control btn btn-outline-primary selectorBox">Select</button></div>
         </div>

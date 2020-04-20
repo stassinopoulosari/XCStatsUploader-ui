@@ -8,7 +8,7 @@
     $passwordInput = document.querySelector("#xu-cl-xcstats-password"),
     $submitButton = document.querySelector("#xu-cl-xcstats-submitButton"),
     $errorAlert = document.querySelector("#xu-cl-xcstats-loginError"),
-    $stravaLoginbutton = document.querySelector("#xu-cl-strava-loginButton");
+    $stravaLoginButton = document.querySelector("#xu-cl-strava-loginButton");
 
   $xcStatsLoginButton.onclick = () => {
     [$xcStatsLoginButton, $emailInput, $passwordInput].forEach(($el) => $el.disabled = true);
@@ -27,12 +27,12 @@
     };
 
     loginToXCStats(payload).then((response) => {
-      console.log(response);
+      // console.log(response);
       $errorAlert.innerText = "";
       $xcStatsLoginForm.classList.add("d-none");
       [$submitButton, $emailInput, $passwordInput, $stravaLoginButton].forEach(($el) => $el.disabled = false);
     }).catch((error) => {
-      console.error(error);
+      // console.error(error);
       $errorAlert.innerText = "Incorrect e-mail or password.";
       $errorAlert.classList.remove("d-none");
       [$xcStatsLoginButton, $emailInput, $passwordInput].forEach(($el) => $el.disabled = true);
@@ -40,10 +40,10 @@
 
     setTimeout(() => {
       if ($errorAlert.innerText == "") {
-        $errorAlert.innerText = "Sorry, this might take a bit...";
+        $errorAlert.innerText = "Sorry, this is taking a bit...";
         $errorAlert.classList.remove("d-none");
       }
-    }, 6000);
+    }, 3000);
   }
 })();
 
@@ -51,18 +51,22 @@
   //BLOCK — Strava Log in
   var getStravaLoginURL = firebase.functions().httpsCallable("getStravaLoginURL");
 
-  var $stravaLoginbutton = document.querySelector("#xu-cl-strava-loginButton"),
+  var $stravaLoginButton = document.querySelector("#xu-cl-strava-loginButton"),
     $stravaLoginError = document.querySelector("#xu-stravaLoginError");
 
-  $stravaLoginbutton.onclick = () => {
-    $stravaLoginbutton.disabled = true;
+  $stravaLoginButton.onclick = () => {
+    $stravaLoginButton.disabled = true;
     firebase.auth().currentUser.getIdToken(true).then((token) => {
       getStravaLoginURL({
-        token: token
+        token: token,
+        developerMode: location.hostname == "localhost"
       }).then((url) => {
-        console.log(url);
+        // console.log(url);
         location.assign(url.data);
       }).catch((loginURLError) => {
+        $stravaLoginError.innerText = JSON.stringify(loginURLError);
+        $stravaLoginError.classList.remove("d-none");
+        $stravaLoginButton.disabled = false;
         console.error(loginURLError);
       });
       setTimeout(() => {
@@ -74,12 +78,13 @@
               $stravaLoginError.innerHTML = "Sorry, this is taking a bit...";
               $stravaLoginError.classList.remove("d-none");
             }
-          }, 5000);
+          }, 3000);
         }
-      }, 6000);
+      }, 1000);
     }).catch((idTokenError) => {
-      $stravaLoginError.innerHTML = "Something went wrong verifying your Google log-in token. Please try again or <a href='mailto:stassinopoulosari@gmail.com'>send me an email</a>.";
+      $stravaLoginError.innerHTML = "Something went wrong retrieving your Google log-in token. Please try again or <a href='mailto:stassinopoulosari@gmail.com'>send me an email</a>.";
       $stravaLoginError.classList.remove("d-none");
+      $stravaLoginButton.disabled = false;
       console.error(idTokenError);
     });
   };
@@ -91,8 +96,12 @@
 
   var $xcStatsLoginButton = document.querySelector("#xu-cl-xcstats-loginButton"),
     $stravaLoginButton = document.querySelector("#xu-cl-strava-loginButton"),
-    $stravaLoginError = document.querySelector("#xu-stravaLoginError");
+    $stravaLoginError = document.querySelector("#xu-stravaLoginError"),
+    $logoutButton = document.querySelector("#xu-signOutButton");
 
+  $logoutButton.onclick = () => firebase.auth().signOut().then(() => {
+    location.assign("..")
+  });
 
   firebase.auth().onAuthStateChanged(() => {
 
@@ -167,13 +176,13 @@ var mainBlock = (() => {
         date: new Date()
       }).then((logData) => {
         logData = logData.data;
-        console.log(logData);
+        // console.log(logData);
         var $cells = [].slice.call(document.querySelectorAll(".xu-logDisplay .xu-logDisplay-contentRow .col:not([class*=xu-hh])"));
         for (var i = 0; i < 7; i++) {
           var $lastWeekCell = $cells[i + 7];
           var $thisWeekCell = $cells[i];
-          console.log(logData.lastWeekLog[i].log);
-          console.log($lastWeekCell, $thisWeekCell);
+          // console.log(logData.lastWeekLog[i].log);
+          // console.log($lastWeekCell, $thisWeekCell);
           var sum = [logData.lastWeekLog[i].log.reduce((acc, el) => acc + el, 0), logData.thisWeekLog[i].log.reduce((acc, el) => acc + el, 0)];
           [$lastWeekCell, $thisWeekCell].forEach(($cell, sumIndex) => {
             $cell.style.backgroundColor = sum[sumIndex] == 0 ? "#FFF" : sum[sumIndex] == 1 ? "#888" : "#000"
@@ -195,10 +204,10 @@ var mainBlock = (() => {
           log.date = dateString;
           return log;
         }).forEach((log) => {
-          console.log(log);
+          // console.log(log);
           dateIndexedLogs[log.date] = log.log.reduce((acc, el) => acc + el, 0);
         });
-        console.log(dateIndexedLogs);
+        // console.log(dateIndexedLogs);
 
         downloadStravaActivities().then((stravaData) => {
           var days = {},
@@ -228,13 +237,13 @@ var mainBlock = (() => {
                 var $el = createElementFromHTML(activityTemplate
                   .replace(/%title%/g, activity.title)
                   .replace(/%summary%/g, "distance: " + activity.distance.toFixed(1) +
-                    " miles ; moving time: " +
+                    " miles; moving time: " +
                     Math.floor(activity.movingTime / 60) + " minutes and " +
                     (activity.movingTime % 60 + "").padStart(2, "0") + " seconds")
                   .replace(/%type%/g, activity.type)
                   .replace(/%url%/g, "https://strava.com/activities/" + activity.id).replace(/%disabled%/g, dateIndexedLogs[date] == 2 ? "disabled" : ""));
 
-                console.log($el);
+                // console.log($el);
                 $el.querySelector(".selectorBox").setAttribute("data-activitydata", JSON.stringify({
                   date: date,
                   activity: activity
@@ -276,7 +285,7 @@ var mainBlock = (() => {
               e.preventDefault();
 
               if (!selected) {
-                console.log(selection, dateIndexedLogs);
+                // console.log(selection, dateIndexedLogs);
                 var success = false;
 
                 if (selection.length == 0) {
@@ -289,7 +298,7 @@ var mainBlock = (() => {
                   }
                 }
 
-                console.log(success);
+                // console.log(success);
 
                 if (success) {
                   selected = true;
@@ -351,7 +360,7 @@ var uploadBlock = (() => {
         };
 
       var packUp = () => {
-        console.log("packing up");
+        // console.log("packing up");
         $formControls.$submitButton.disabled = false;
         $formControls.$success.classList.add("d-none");
         [$formControls.$effortGroup, $formControls.$feelGroup].forEach(($group) => {
@@ -370,11 +379,11 @@ var uploadBlock = (() => {
 
 
       $formControls.$cancelButton.onclick = packUp;
-      console.log($formControls.$cancelButton, packUp);
+      // console.log($formControls.$cancelButton, packUp);
 
       var postToXCStats = firebase.functions().httpsCallable("postToXCStats");
       var date = selection[0].date;
-      console.log(selection, dateIndexedLogs[date]);
+      // console.log(selection, dateIndexedLogs[date]);
 
       var activityCollection = selection;
       if (!activityCollection || activityCollection.length == 0) return;
@@ -394,7 +403,13 @@ var uploadBlock = (() => {
         title += " - " + date;
       }
 
-      var description = activityCollection.map((activity) => "https://strava.com/activities/" + activity.activity.id + "\n\n");
+      console.log(activityCollection);
+
+      var description = activityCollection.map((activity, i) => "Map" +
+        (activityCollection.length > 1 ? "" + (i + 1) : "") +
+        ": https://strava.com/activities/" +
+        activity.activity.id +
+        (activity.activity.avgHR && activity.activity.avgHR != -1 ? "\n\nAverage Heart Rate: " + activity.activity.avgHR + "bpm" : "")).join("\n -- \n");
 
       var totalLength = activityCollection.reduce((accumulator, activity) => accumulator + activity.activity.distance, 0);
       var totalTime = activityCollection.reduce((accumulator, activity) => accumulator + activity.activity[useElapsedTime ? "elapsedTime" : "movingTime"], 0);
@@ -413,7 +428,7 @@ var uploadBlock = (() => {
       [$formControls.$effortGroup, $formControls.$feelGroup].forEach(function($group) {
 
         var $children = [].slice.call($group.children);
-        console.log($children);
+        // console.log($children);
         $children.forEach(($child, childIndex) => {
           $child.onclick = () => {
             $children.forEach(($otherChild) => $otherChild.classList.remove("active"));
@@ -455,11 +470,11 @@ var uploadBlock = (() => {
           description: $formControls.$description.value
         };
 
-        console.log(JSON.stringify(payload));
+        // console.log(JSON.stringify(payload));
         postToXCStats({
           payload: payload
         }).then((message) => {
-          console.log(message);
+          // console.log(message);
           if (message.data.includes("success:::")) {
             $formControls.$success.classList.remove("d-none");
             setTimeout(() => packUp(), 1000);
@@ -467,7 +482,7 @@ var uploadBlock = (() => {
         }).catch((e) => error(e));
       }
 
-      console.log(totalLength.toFixed(1), totalTime, totalMins, totalSec);
+      // console.log(totalLength.toFixed(1), totalTime, totalMins, totalSec);
 
     }
   };
@@ -485,7 +500,7 @@ var uploadBlock = (() => {
   $otherBlocks = ["xu-uploadInterface", "xu-cl-main", "xu-cl-loginFlow", "xu-settingsButton", "xu-s-spacer"].map((id) => document.getElementById(id));
 
   $settingsButton.onclick = () => {
-    console.log($otherBlocks);
+    // console.log($otherBlocks);
     $otherBlocks.forEach(($block) => $block.classList.add("d-none"));
     $settingsBlock.classList.remove("d-none");
   };
@@ -505,7 +520,9 @@ var uploadBlock = (() => {
         } else {
           reject({
             status: false,
-            error: {message:"User did not confirm."}
+            error: {
+              message: "User did not confirm."
+            }
           });
         }
       });
@@ -546,7 +563,7 @@ var uploadBlock = (() => {
       $deletionError.classList.remove("d-none");
       setTimeout(() => location.assign(".."), 4000);
     }).catch((error) => {
-      console.log(error);
+      // console.log(error);
       $deletionError.innerText = error.error.message;
       $deletionError.classList.remove("d-none");
       [$deleteDataButton, $deleteAccountButton].forEach(($btn) => $btn.disabled = false);

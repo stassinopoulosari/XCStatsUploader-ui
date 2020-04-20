@@ -17,6 +17,12 @@
     }
   });
 
+  firebase.auth().onAuthStateChanged(() => {
+    if(firebase.auth().currentUser) location.assign("./client/");
+    else $loginButton.disabled = false;
+  });
+
+
 })();
 
 // loginToStrava = firebase.functions().httpsCallable("loginToStrava");
