@@ -1,0 +1,46 @@
+.xu-fullHeight {
+  position: absolute;
+  top:0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.xu-stravaButton {
+    color: #fff;
+    background-color: #ff8636;
+    border-color: #ff8636;
+}
+
+.xu-stravaButton[disabled] {
+  cursor: default;
+}
+
+.xu-stravaButton[disabled]:hover {
+  color: white;
+}
+
+.xu-btn-leftAlign {
+  text-align:left;
+}
+
+.xu-formInfo {
+  padding-left:0;
+  padding-right:0;
+  border:none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.xu-logDisplay .row .col{
+  border: 0.5px #F5F5F5 solid;
+  height:2em;
+  padding:0;
+  line-height:2em;
+  padding-right:0.5em;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

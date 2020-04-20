@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+
+
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Client — Ari's XCStats Uploader</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  <link rel="stylesheet" href="../assets/stylesheet.css">
+</head>
+
+<body class="">
+
+  <nav class="navbar navbar-dark bg-dark">
+    <a class="navbar-brand" href="#">Ari's XCStats Uploader</a>
+  </nav>
+
+  <br><br>
+
+  <div class="container">
+    <div class="row d-none" id="xu-cl-loginFlow">
+      <div class="col-md-12">
+        <h1>Login Flow</h1>
+        <br>
+        <p>
+          Welcome to Ari's XCStats uploader. Now that you've logged in with Google, we're going to have you log in with a couple other things. You should only have to do this once.
+        </p>
+        <br>
+        <h2>First login: XCStats</h2>
+        <button id="xu-cl-xcstats-loginButton" class="btn btn-lg btn-secondary">Log In with XCStats</button>
+        <form id="xu-cl-xcstats-loginForm" class="d-none">
+          <br>
+          <div class="alert alert-danger d-none" id="xu-cl-xcstats-loginError"></div>
+          <div class="form-group"><label>XCStats E-mail</label><input required id="xu-cl-xcstats-email" type="email" class="form-control"></div>
+          <div class="form-group"><label>XCStats Password</label><input required id="xu-cl-xcstats-password" type="password" class="form-control"></div>
+          <input class="btn btn-primary" type="submit" id="xu-cl-xcstats-submitButton" value="Log in">
+        </form>
+        <br>
+        <br>
+        <h2>Second login: Strava</h2>
+        <button disabled id="xu-cl-strava-loginButton" class="btn btn-lg xu-stravaButton">Log In with Strava</button>
+      </div>
+    </div>
+    <div class="row d-none" id="xu-cl-main">
+      <div class="col-md-12" id="xu-cl-stravaDownloadingHeader">
+        <h1>Downloading your XCStats Log &amp; Strava activities...</h1>
+        <h3>Please stand by.</h3>
+      </div>
+      <div class="col-md-12 d-none" id="xu-cl-activitiesSummary">
+        <h1>Your XCStats Log So Far</h1>
+        <div class="container xu-logDisplay">
+          <div class="row">
+            <div class="col"></div>
+            <div class="col">M</div>
+            <div class="col">T</div>
+            <div class="col">W</div>
+            <div class="col">T</div>
+            <div class="col">F</div>
+            <div class="col">S</div>
+            <div class="col">S</div>
+          </div>
+          <div class="row xu-logDisplay-contentRow">
+            <div class="col xu-hh">This week</div>
+            <div class="col"></div>
+            <div class="col"></div>
+            <div class="col"></div>
+            <div class="col"></div>
+            <div class="col"></div>
+            <div class="col"></div>
+            <div class="col"></div>
+          </div>
+          <div class="row xu-logDisplay-contentRow">
+            <div class="col xu-hh">Last week</div>
+            <div class="col"></div>
+            <div class="col"></div>
+            <div class="col"></div>
+            <div class="col"></div>
+            <div class="col"></div>
+            <div class="col"></div>
+            <div class="col"></div>
+          </div>
+        </div>
+        <br>
+        <h1>Your Strava Activities</h1>
+        <ul class="list-group" id="xu-cl-stravaActivitiesList"></ul>
+      </div>
+    </div>
+    <div class="container d-none" id="xu-uploadInterface">
+      <h1>Upload <button class="btn btn-large btn-outline-danger" id="xu-cancelUploadButton">Cancel</button></h1>
+      <form id="xu-uploadForm">
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="xu-upload-title" class="form-control">
+        </div>
+        <div class="form-group">
+          <label>Distance</label>
+          <span class="form-control btn xu-formInfo xu-btn-leftAlign" id="xu-upload-distance"></span>
+        </div>
+        <div class="form-group">
+          <label>Time</label>
+          <span class="form-control btn xu-formInfo xu-btn-leftAlign" id="xu-upload-time"></span>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="xu-upload-description" cols="30" rows="10" class="form-control"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Effort Level</label><br>
+          <div id="xu-upload-effortGroup" class="btn-group btn-group-lg" role="group" aria-label="Basic example">
+            <button type="button" class="btn btn-outline-secondary">Minimum</button>
+            <button type="button" class="btn btn-outline-secondary">Easy</button>
+            <button type="button" class="btn btn-outline-secondary">Moderate</button>
+            <button type="button" class="btn btn-outline-secondary">Hard</button>
+            <button type="button" class="btn btn-outline-secondary">Maximum</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Runner Feel</label><br>
+          <div id="xu-upload-feelGroup" class="btn-group btn-group-lg" role="group" aria-label="Basic example">
+            <button type="button" class="btn btn-outline-danger">Terrible</button>
+            <button type="button" class="btn btn-outline-secondary">Poor</button>
+            <button type="button" class="btn btn-outline-warning">Average</button>
+            <button type="button" class="btn btn-outline-primary">Good</button>
+            <button type="button" class="btn btn-outline-success">Great</button>
+          </div>
+        </div>
+        
+        <div class="alert alert-danger d-none" id="xu-upload-error"></div>
+        <div id="xu-upload-success" class="alert alert-success d-none">Upload succeeded! Returning to main screen and reloading data...</div>
+
+        <input type="submit" class="btn btn-primary" id="xu-upload-submitButton">
+      </form>
+    </div>
+  </div>
+  <div class="d-none">
+    <div id="template-day">
+      <ul class="list-group-item">
+        <h3>%date% <button class="btn btn-success invisible addBox" disabled data-date="%date%">Upload</button></h3>
+        <ul class="list-group">%activities%</ul>
+      </ul>
+    </div>
+    <div id="template-activity">
+      <li class="list-group-item">
+        <div class="row">
+          <div class="col-lg-4"><a href="%url%" class="xu-btn-leftAlign form-control btn"><b>%type%: %title%</b></a></div>
+          <div class="col-lg-6"><span class="form-control xu-formInfo btn">%summary%</span></div>
+          <div class="col-lg-2 input-group"><button %disabled% class="form-control btn btn-outline-primary selectorBox">Select</button></div>
+        </div>
+      </li>
+    </div>
+  </div>
+</body>
+
+<!-- The core Firebase JS SDK is always required and must be listed first -->
+<script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-app.js"></script>
+
+<!-- TODO: Add SDKs for Firebase products that you want to use
+     https://firebase.google.com/docs/web/setup#available-libraries -->
+<script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-analytics.js"></script>
+<script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-functions.js"></script>
+
+
+<script>
+  // Your web app's Firebase configuration
+  var firebaseConfig = {
+    apiKey: "AIzaSyDkKh4oFcY74xUhOO3ReIQ-ewD8upRCL5Y",
+    authDomain: "stassinopoulosari-xcstats-u.firebaseapp.com",
+    databaseURL: "https://stassinopoulosari-xcstats-u.firebaseio.com",
+    projectId: "stassinopoulosari-xcstats-u",
+    storageBucket: "stassinopoulosari-xcstats-u.appspot.com",
+    messagingSenderId: "361114766991",
+    appId: "1:361114766991:web:9f720a7a248de653b22afa",
+    measurementId: "G-KBK7Q284JH"
+  };
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  firebase.analytics();
+</script>
+<script src="../assets/client.js"></script>
+
+</html>

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Ari's XCStats Uploader</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  <link rel="stylesheet" href="assets/stylesheet.css">
+</head>
+
+<body class="xu-fullHeight d-flex flex-column">
+
+  <nav class="navbar navbar-dark bg-dark">
+    <a class="navbar-brand" href="#">Ari's XCStats Uploader</a>
+  </nav>
+
+  <div class="container flex-grow-1 d-flex align-items-center justify-content-center">
+    <button id="xu-loginButton" class="btn btn-lg btn-danger">Log in with Google</button>
+  </div>
+
+</body>
+
+<!-- The core Firebase JS SDK is always required and must be listed first -->
+<script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-app.js"></script>
+
+<!-- TODO: Add SDKs for Firebase products that you want to use
+     https://firebase.google.com/docs/web/setup#available-libraries -->
+<script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-analytics.js"></script>
+<script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-functions.js"></script>
+<script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-auth.js"></script>
+
+
+<script>
+  // Your web app's Firebase configuration
+  var firebaseConfig = {
+    apiKey: "AIzaSyDkKh4oFcY74xUhOO3ReIQ-ewD8upRCL5Y",
+    authDomain: "stassinopoulosari-xcstats-u.firebaseapp.com",
+    databaseURL: "https://stassinopoulosari-xcstats-u.firebaseio.com",
+    projectId: "stassinopoulosari-xcstats-u",
+    storageBucket: "stassinopoulosari-xcstats-u.appspot.com",
+    messagingSenderId: "361114766991",
+    appId: "1:361114766991:web:9f720a7a248de653b22afa",
+    measurementId: "G-KBK7Q284JH"
+  };
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  firebase.analytics();
+</script>
+<script src="assets/login.js"></script>
+
+</html>
