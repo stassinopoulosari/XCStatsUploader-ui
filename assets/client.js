@@ -11,7 +11,7 @@
     $stravaLoginbutton = document.querySelector("#xu-cl-strava-loginButton");
 
   $xcStatsLoginButton.onclick = () => {
-    $xcStatsLoginButton.disabled = true;
+    [$xcStatsLoginButton, $emailInput, $passwordInput].forEach(($el) => $el.disabled = true);
     $xcStatsLoginForm.classList.remove("d-none");
   };
 
@@ -28,15 +28,22 @@
 
     loginToXCStats(payload).then((response) => {
       console.log(response);
+      $errorAlert.innerText = "";
       $xcStatsLoginForm.classList.add("d-none");
-      $stravaLoginbutton.disabled = false;
+      [$submitButton, $emailInput, $passwordInput, $stravaLoginButton].forEach(($el) => $el.disabled = false);
     }).catch((error) => {
       console.error(error);
-      $errorAlert.innerText = "Login error";
+      $errorAlert.innerText = "Incorrect e-mail or password.";
       $errorAlert.classList.remove("d-none");
-      $submitButton.disabled = false;
+      [$xcStatsLoginButton, $emailInput, $passwordInput].forEach(($el) => $el.disabled = true);
     });
 
+    setTimeout(() => {
+      if ($errorAlert.innerText == "") {
+        $errorAlert.innerText = "Sorry, this might take a bit...";
+        $errorAlert.classList.remove("d-none");
+      }
+    }, 6000);
   }
 })();
 
@@ -44,7 +51,8 @@
   //BLOCK — Strava Log in
   var getStravaLoginURL = firebase.functions().httpsCallable("getStravaLoginURL");
 
-  var $stravaLoginbutton = document.querySelector("#xu-cl-strava-loginButton");
+  var $stravaLoginbutton = document.querySelector("#xu-cl-strava-loginButton"),
+    $stravaLoginError = document.querySelector("#xu-stravaLoginError");
 
   $stravaLoginbutton.onclick = () => {
     $stravaLoginbutton.disabled = true;
@@ -57,9 +65,23 @@
       }).catch((loginURLError) => {
         console.error(loginURLError);
       });
+      setTimeout(() => {
+        if ($stravaLoginError.innerText == "") {
+          $stravaLoginError.innerText = "Retrieving the URL from the server...";
+          $stravaLoginError.classList.remove("d-none");
+          setTimeout(() => {
+            if ($stravaLoginError.innerText == "Retrieving the URL from the server...") {
+              $stravaLoginError.innerHTML = "Sorry, this is taking a bit...";
+              $stravaLoginError.classList.remove("d-none");
+            }
+          }, 5000);
+        }
+      }, 6000);
     }).catch((idTokenError) => {
+      $stravaLoginError.innerHTML = "Something went wrong verifying your Google log-in token. Please try again or <a href='mailto:stassinopoulosari@gmail.com'>send me an email</a>.";
+      $stravaLoginError.classList.remove("d-none");
       console.error(idTokenError);
-    })
+    });
   };
 
 })();
@@ -68,7 +90,8 @@
   //BLOCK — Login Flow
 
   var $xcStatsLoginButton = document.querySelector("#xu-cl-xcstats-loginButton"),
-    $stravaLoginbutton = document.querySelector("#xu-cl-strava-loginButton");
+    $stravaLoginButton = document.querySelector("#xu-cl-strava-loginButton"),
+    $stravaLoginError = document.querySelector("#xu-stravaLoginError");
 
 
   firebase.auth().onAuthStateChanged(() => {
@@ -88,13 +111,24 @@
           userData["markers.hasLoggedInWithStrava"].status == true) ||
         location.search.includes("stravaAuthSucceeded")) {
         $xcStatsLoginButton.disabled = true;
-        $stravaLoginbutton.disabled = true;
+        $stravaLoginButton.disabled = true;
         $main.classList.remove("d-none");
         mainBlock.startMainBlock();
       } else if (userData && userData["markers.hasLoggedInWithXCStats"] && userData["markers.hasLoggedInWithXCStats"].status == true) {
         $xcStatsLoginButton.disabled = true;
-        $stravaLoginbutton.disabled = false;
+        $stravaLoginButton.disabled = false;
         $loginFlow.classList.remove("d-none");
+        var search = location.search;
+        $stravaLoginError.classList.remove("d-none");
+        if (search.includes("stravaAuthError=incorrectScope")) {
+          $stravaLoginError.innerText = "Sorry, we need to be able to see your private activities. We don't save your Strava data anywhere except your own computer.";
+        } else if (search.includes("stravaAuthError=firebaseError")) {
+          $stravaLoginError.innerHTML = "Sorry, we couldn't save your Strava token. Please try again or <a href='mailto:stassinopoulosari@gmail.com'>send me an email</a>.";
+        } else if (search.includes("stravaAuthError=httpError")) {
+          $stravaLoginError.innerHTML = "Sorry, we couldn't verify your Google log-in token. Please try again or <a href='mailto:stassinopoulosari@gmail.com'>send me an email</a>.";
+        } else {
+          $stravaLoginError.classList.add("d-none");
+        }
       } else {
         $loginFlow.classList.remove("d-none");
       }
@@ -436,5 +470,86 @@ var uploadBlock = (() => {
       console.log(totalLength.toFixed(1), totalTime, totalMins, totalSec);
 
     }
+  };
+})();
+
+(() => {
+  //BLOCK — Settings
+
+  var $settingsButton = document.getElementById("xu-settingsButton"),
+    $settingsBlock = document.getElementById("xu-settingsBlock"),
+    $closeSettingsButton = document.getElementById("xu-s-closeSettingsButton"),
+    $deleteDataButton = document.getElementById("xu-s-deleteDataButton"),
+    $deleteAccountButton = document.getElementById("xu-s-deleteAccountButton"),
+    $deletionError = document.getElementById("xu-s-deletionError");
+  $otherBlocks = ["xu-uploadInterface", "xu-cl-main", "xu-cl-loginFlow", "xu-settingsButton", "xu-s-spacer"].map((id) => document.getElementById(id));
+
+  $settingsButton.onclick = () => {
+    console.log($otherBlocks);
+    $otherBlocks.forEach(($block) => $block.classList.add("d-none"));
+    $settingsBlock.classList.remove("d-none");
+  };
+
+  $closeSettingsButton.onclick = () => location.reload();
+
+  var deleteData = (deleteAccount = false) => {
+      return new Promise(function(resolve, reject) {
+        var uid = firebase.auth().currentUser.uid;
+        if (!uid) return;
+
+        if (confirm("Are you sure you would like to delete your " + (deleteAccount ? "account" : "data") + "?")) {
+          firebase.firestore().doc("users/" + uid).set({}).then(resolve).catch((error) => reject({
+            status: false,
+            error: error
+          }));
+        } else {
+          reject({
+            status: false,
+            error: {message:"User did not confirm."}
+          });
+        }
+      });
+    },
+    deleteAccount = () => {
+      return new Promise(function(resolve, reject) {
+        deleteData(true).then(() => {
+          var provider = new firebase.auth.GoogleAuthProvider();
+          firebase.auth().signInWithPopup(provider).then(() => {
+            firebase.auth().currentUser.delete().then(() => {
+              resolve();
+            }).catch((error) => {
+              reject({
+                status: false,
+                error: error
+              });
+            });
+          }).catch(reject);
+        }).catch(reject);
+      });
+    };
+  $deleteDataButton.onclick = () => {
+    [$deleteDataButton, $deleteAccountButton].forEach(($btn) => $btn.disabled = true);
+    deleteData().then(() => {
+      $deletionError.innerText = "Deletion succeeded. Reloading...";
+      $deletionError.classList.remove("d-none");
+      setTimeout(() => location.assign(location.href.split("?")[0]), 1000);
+    }).catch((error) => {
+      $deletionError.innerText = error;
+      $deletionError.classList.remove("d-none");
+      [$deleteDataButton, $deleteAccountButton].forEach(($btn) => $btn.disabled = false);
+    });
+  };
+  $deleteAccountButton.onclick = () => {
+    [$deleteDataButton, $deleteAccountButton].forEach(($btn) => $btn.disabled = true);
+    deleteAccount().then(() => {
+      $deletionError.innerText = "Deletion succeeded. Goodbye.";
+      $deletionError.classList.remove("d-none");
+      setTimeout(() => location.assign(".."), 4000);
+    }).catch((error) => {
+      console.log(error);
+      $deletionError.innerText = error.error.message;
+      $deletionError.classList.remove("d-none");
+      [$deleteDataButton, $deleteAccountButton].forEach(($btn) => $btn.disabled = false);
+    });
   };
 })();

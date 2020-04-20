@@ -44,3 +44,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.xu-pageHeight {
+  height:80vh;
+}

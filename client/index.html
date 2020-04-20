@@ -41,7 +41,7 @@
         <br>
         <br>
         <h2>Second login: Strava</h2>
-        <button disabled id="xu-cl-strava-loginButton" class="btn btn-lg xu-stravaButton">Log In with Strava</button>
+        <button disabled id="xu-cl-strava-loginButton" class="btn btn-lg xu-stravaButton">Log In with Strava</button>&nbsp;<span class="text-danger d-none" id="xu-stravaLoginError"></span>
       </div>
     </div>
     <div class="row d-none" id="xu-cl-main">
@@ -127,7 +127,7 @@
             <button type="button" class="btn btn-outline-success">Great</button>
           </div>
         </div>
-        
+
         <div class="alert alert-danger d-none" id="xu-upload-error"></div>
         <div id="xu-upload-success" class="alert alert-success d-none">Upload succeeded! Returning to main screen and reloading data...</div>
 
@@ -135,6 +135,33 @@
       </form>
     </div>
   </div>
+  <div class="container d-none" id="xu-settingsBlock">
+    <h1>Settings <button id="xu-s-closeSettingsButton" class="btn btn-danger">Close</button></h1>
+    <br>
+    <h3>What data do we collect and how do we use it?</h3>
+    <p>We collect your <b>Strava token</b>, your <b>Google UID</b>, and your <b>XCStats cookie</b>.</p>
+    <p>We use your <b>Strava token</b> to download your activities. We do not save your activities on the server, we only deliver them back to you for uploading.</p>
+    <p>We only use your <b>Google UID</b> to verify your identity so you don't have to log in every time. We use Google Cloud Functions to retrieve your Strava and XCStats data and it
+    is most convenient to use your Google log-in for that.</p>
+    <p>We use your <b>XCStats cookie</b> to download your logs and upload activities. We do not store the logs we download or the activities we upload.</p>
+    <br>
+    <h3>Any questions or requests?</h3>
+    <p>Send me <a href="mailto:stassinopoulosari+xcstats-u@gmail.com">an e-mail</a>.</p>
+    <br>
+    <h3>Other Settings</h3>
+    <div class="form-group">
+      <button class="btn btn-outline-danger" id="xu-s-deleteDataButton">Delete my data.</button>&nbsp;<button id="xu-s-deleteAccountButton" class="btn btn-outline-danger">Delete my account.</button> <span class="text-danger d-none" id="xu-s-deletionError"></span>
+    </div>
+  </div>
+  </div>
+  <br>
+  <div class="xu-pageHeight" id="xu-s-spacer">
+  </div>
+  <div class="container">
+    <button class="btn btn-outline-danger" id="xu-settingsButton">Manage User Data / Delete Account</button>
+  </div>
+  <br>
+  <br>
   <div class="d-none">
     <div id="template-day">
       <ul class="list-group-item">
@@ -181,6 +208,7 @@
   firebase.initializeApp(firebaseConfig);
   firebase.analytics();
 </script>
-<script src="../assets/client.js"></script>
+<script src="../assets/fetch-inject.umd.min.js"></script>
+<script src="../assets/developerMode.js"></script>
 
 </html>
