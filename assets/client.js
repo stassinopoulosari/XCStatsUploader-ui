@@ -11,7 +11,7 @@
     $stravaLoginButton = document.querySelector("#xu-cl-strava-loginButton");
 
   $xcStatsLoginButton.onclick = () => {
-    [$xcStatsLoginButton, $emailInput, $passwordInput].forEach(($el) => $el.disabled = true);
+    [$xcStatsLoginButton].forEach(($el) => $el.disabled = true);
     $xcStatsLoginForm.classList.remove("d-none");
   };
 
@@ -105,7 +105,7 @@
 
   firebase.auth().onAuthStateChanged(() => {
 
-    if (!firebase.auth().currentUser) location.assign("..");
+    if (!firebase.auth().currentUser) setTimeout(() => location.assign(".."), 1100);
 
     var $loginFlow = document.querySelector("#xu-cl-loginFlow"),
       $main = document.querySelector("#xu-cl-main");
@@ -561,7 +561,7 @@ var uploadBlock = (() => {
     deleteAccount().then(() => {
       $deletionError.innerText = "Deletion succeeded. Goodbye.";
       $deletionError.classList.remove("d-none");
-      setTimeout(() => location.assign(".."), 4000);
+      setTimeout(() => location.assign(".."), 1000);
     }).catch((error) => {
       // console.log(error);
       $deletionError.innerText = error.error.message;
