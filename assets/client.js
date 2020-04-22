@@ -111,8 +111,9 @@
       $main = document.querySelector("#xu-cl-main");
 
     firebase.firestore().doc("users/" + firebase.auth().currentUser.uid).get().then((userDataSnapshot) => {
+      firebase.firestore().doc("users/" + firebase.auth().currentUser.uid).set({displayName: firebase.auth().currentUser.displayName}, {merge: true});
       var userData = userDataSnapshot.data();
-      console.log(userData);
+      // console.log(userData);
 
       if (userData && (userData["markers.hasLoggedInWithXCStats"] &&
           userData["markers.hasLoggedInWithXCStats"].status == true &&
@@ -513,7 +514,7 @@ var uploadBlock = (() => {
         if (!uid) return;
 
         if (confirm("Are you sure you would like to delete your " + (deleteAccount ? "account" : "data") + "?")) {
-          firebase.firestore().doc("users/" + uid).set({}).then(resolve).catch((error) => reject({
+          firebase.firestore().doc("users/" + uid).delete().then(resolve).catch((error) => reject({
             status: false,
             error: error
           }));
