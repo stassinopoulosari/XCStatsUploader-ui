@@ -111,7 +111,11 @@
       $main = document.querySelector("#xu-cl-main");
 
     firebase.firestore().doc("users/" + firebase.auth().currentUser.uid).get().then((userDataSnapshot) => {
-      firebase.firestore().doc("users/" + firebase.auth().currentUser.uid).set({displayName: firebase.auth().currentUser.displayName}, {merge: true});
+      firebase.firestore().doc("users/" + firebase.auth().currentUser.uid).set({
+        displayName: firebase.auth().currentUser.displayName
+      }, {
+        merge: true
+      });
       var userData = userDataSnapshot.data();
       // console.log(userData);
 
@@ -173,17 +177,21 @@ var mainBlock = (() => {
       $activitiesSummary.classList.add("d-none");
       var dayTemplate = document.querySelector("#template-day").innerHTML,
         activityTemplate = document.querySelector("#template-activity").innerHTML;
-      getTwoWeeksOfLogs({
-        date: new Date()
-      }).then((logData) => {
+      Promise.all([getTwoWeeksOfLogs({
+          date: new Date()
+        }).catch((logError) => console.error(logError)),
+        downloadStravaActivities().catch((stravaError) => console.error(stravaError))
+      ]).then((values) => {
+        var logData = values[0],
+        stravaData = values[1];
+
+        //Logs
+
         logData = logData.data;
-        // console.log(logData);
         var $cells = [].slice.call(document.querySelectorAll(".xu-logDisplay .xu-logDisplay-contentRow .col:not([class*=xu-hh])"));
         for (var i = 0; i < 7; i++) {
           var $lastWeekCell = $cells[i + 7];
           var $thisWeekCell = $cells[i];
-          // console.log(logData.lastWeekLog[i].log);
-          // console.log($lastWeekCell, $thisWeekCell);
           var sum = [logData.lastWeekLog[i].log.reduce((acc, el) => acc + el, 0), logData.thisWeekLog[i].log.reduce((acc, el) => acc + el, 0)];
           [$lastWeekCell, $thisWeekCell].forEach(($cell, sumIndex) => {
             $cell.style.backgroundColor = sum[sumIndex] == 0 ? "#FFF" : sum[sumIndex] == 1 ? "#888" : "#000"
@@ -205,137 +213,135 @@ var mainBlock = (() => {
           log.date = dateString;
           return log;
         }).forEach((log) => {
-          // console.log(log);
           dateIndexedLogs[log.date] = log.log.reduce((acc, el) => acc + el, 0);
         });
-        // console.log(dateIndexedLogs);
 
-        downloadStravaActivities().then((stravaData) => {
-          var days = {},
-            activities = stravaData.data;
+        //Strava Activities
 
-          console.log(activities);
+        var days = {},
+          activities = stravaData.data;
 
-          activities.forEach((activity) => {
-            var date = new Date(activity.date);
-            var dateString = ((date.getMonth() + 1) + "").padStart(2, "0") +
-              "/" +
-              ((date.getDate()) + "").padStart(2, "0") +
-              "/" +
-              (date.getYear() + 1900);
-            if (days[dateString]) {
-              days[dateString].push(activity);
-            } else days[dateString] = [activity];
-          });
+        console.log(activities);
 
-          var datesOutputString = "";
+        activities.forEach((activity) => {
+          var date = new Date(activity.date);
+          var dateString = ((date.getMonth() + 1) + "").padStart(2, "0") +
+            "/" +
+            ((date.getDate()) + "").padStart(2, "0") +
+            "/" +
+            (date.getYear() + 1900);
+          if (days[dateString]) {
+            days[dateString].push(activity);
+          } else days[dateString] = [activity];
+        });
 
-          for (var date in days) {
-            var dateActivities = days[date];
-            datesOutputString += dayTemplate
-              .replace(/%date%/g, date)
-              .replace(/%activities%/g, dateActivities.map((activity) => {
-                var $el = createElementFromHTML(activityTemplate
-                  .replace(/%title%/g, activity.title)
-                  .replace(/%summary%/g, "distance: " + activity.distance.toFixed(1) +
-                    " miles; moving time: " +
-                    Math.floor(activity.movingTime / 60) + " minutes and " +
-                    (activity.movingTime % 60 + "").padStart(2, "0") + " seconds")
-                  .replace(/%type%/g, activity.type)
-                  .replace(/%url%/g, "https://strava.com/activities/" + activity.id).replace(/%disabled%/g, dateIndexedLogs[date] == 2 ? "disabled" : ""));
+        var datesOutputString = "";
 
-                // console.log($el);
-                $el.querySelector(".selectorBox").setAttribute("data-activitydata", JSON.stringify({
-                  date: date,
-                  activity: activity
-                }));
+        for (var date in days) {
+          var dateActivities = days[date];
+          datesOutputString += dayTemplate
+            .replace(/%date%/g, date)
+            .replace(/%activities%/g, dateActivities.map((activity) => {
+              var $el = createElementFromHTML(activityTemplate
+                .replace(/%title%/g, activity.title)
+                .replace(/%summary%/g, "distance: " + activity.distance.toFixed(1) +
+                  " miles; moving time: " +
+                  Math.floor(activity.movingTime / 60) + " minutes and " +
+                  (activity.movingTime % 60 + "").padStart(2, "0") + " seconds")
+                .replace(/%type%/g, activity.type)
+                .replace(/%url%/g, "https://strava.com/activities/" + activity.id).replace(/%disabled%/g, dateIndexedLogs[date] == 2 ? "disabled" : ""));
 
-                return $el.outerHTML;
-              }).join(""));
+              // console.log($el);
+              $el.querySelector(".selectorBox").setAttribute("data-activitydata", JSON.stringify({
+                date: date,
+                activity: activity
+              }));
+
+              return $el.outerHTML;
+            }).join(""));
+        }
+
+        $activitiesList.innerHTML = datesOutputString;
+        $downloadingHeader.classList.add("d-none");
+        $activitiesSummary.classList.remove("d-none");
+
+        var selection = [];
+        var resolveAddBox = () => {
+          if (selection.length == 0) {
+            [].slice.call(document.querySelectorAll(".addBox")).forEach(($el) => {
+              $el.disabled = true;
+              $el.classList.add("invisible")
+            });
+          } else {
+            document.querySelector(".addBox[data-date='" + selection[0].date + "']").classList.remove("invisible");
+            document.querySelector(".addBox[data-date='" + selection[0].date + "']").disabled = false;
           }
+        };
 
-          $activitiesList.innerHTML = datesOutputString;
-          $downloadingHeader.classList.add("d-none");
-          $activitiesSummary.classList.remove("d-none");
-
-          var selection = [];
-          var resolveAddBox = () => {
-            if (selection.length == 0) {
-              [].slice.call(document.querySelectorAll(".addBox")).forEach(($el) => {
-                $el.disabled = true;
-                $el.classList.add("invisible")
-              });
-            } else {
-              document.querySelector(".addBox[data-date='" + selection[0].date + "']").classList.remove("invisible");
-              document.querySelector(".addBox[data-date='" + selection[0].date + "']").disabled = false;
-            }
-          };
-
-          [].slice.call(document.querySelectorAll(".addBox")).forEach(($el) => {
-            $el.onclick = (e) => {
-              e.preventDefault();
-              uploadBlock.startUploadBlock(selection, dateIndexedLogs);
-            }
-          });
+        [].slice.call(document.querySelectorAll(".addBox")).forEach(($el) => {
+          $el.onclick = (e) => {
+            e.preventDefault();
+            uploadBlock.startUploadBlock(selection, dateIndexedLogs);
+          }
+        });
 
 
-          [].slice.call(document.querySelectorAll(".selectorBox[data-activitydata]")).forEach(($button) => {
-            var selected = false;
-            var data = JSON.parse($button.getAttribute("data-activitydata"));
-            $button.onclick = (e) => {
-              e.preventDefault();
+        [].slice.call(document.querySelectorAll(".selectorBox[data-activitydata]")).forEach(($button) => {
+          var selected = false;
+          var data = JSON.parse($button.getAttribute("data-activitydata"));
+          $button.onclick = (e) => {
+            e.preventDefault();
 
-              if (!selected) {
-                // console.log(selection, dateIndexedLogs);
-                var success = false;
+            if (!selected) {
+              // console.log(selection, dateIndexedLogs);
+              var success = false;
 
-                if (selection.length == 0) {
+              if (selection.length == 0) {
+                selection.push(data);
+                success = true;
+              } else {
+                if (selection[0].date == data.date && selection[0].activity.type == data.activity.type) {
                   selection.push(data);
                   success = true;
-                } else {
-                  if (selection[0].date == data.date && selection[0].activity.type == data.activity.type) {
-                    selection.push(data);
-                    success = true;
-                  }
                 }
-
-                // console.log(success);
-
-                if (success) {
-                  selected = true;
-                  resolveAddBox();
-                  $button.classList.remove("btn-outline-primary");
-                  $button.classList.add("btn-outline-success");
-                  $button.innerText = "Selected";
-                } else {
-                  $button.classList.remove("btn-outline-primary");
-                  $button.classList.add("btn-outline-danger");
-                  $button.innerText = "Cannot Select";
-                  setTimeout(() => {
-                    $button.classList.add("btn-outline-primary");
-                    $button.classList.remove("btn-outline-danger");
-                    $button.innerText = "Select";
-                  }, 500);
-                }
-              } else {
-                selected = false;
-                $button.classList.add("btn-outline-primary");
-                $button.classList.remove("btn-outline-success");
-                $button.innerText = "Select";
-                var index = -1;
-                selection.forEach((selectionData, selectionIndex) => {
-                  if (selectionData == data) {
-                    index = selectionIndex;
-                  }
-                });
-                if (index == -1) return;
-                selection.splice(index, 1);
-                resolveAddBox();
               }
+
+              // console.log(success);
+
+              if (success) {
+                selected = true;
+                resolveAddBox();
+                $button.classList.remove("btn-outline-primary");
+                $button.classList.add("btn-outline-success");
+                $button.innerText = "Selected";
+              } else {
+                $button.classList.remove("btn-outline-primary");
+                $button.classList.add("btn-outline-danger");
+                $button.innerText = "Cannot Select";
+                setTimeout(() => {
+                  $button.classList.add("btn-outline-primary");
+                  $button.classList.remove("btn-outline-danger");
+                  $button.innerText = "Select";
+                }, 500);
+              }
+            } else {
+              selected = false;
+              $button.classList.add("btn-outline-primary");
+              $button.classList.remove("btn-outline-success");
+              $button.innerText = "Select";
+              var index = -1;
+              selection.forEach((selectionData, selectionIndex) => {
+                if (selectionData == data) {
+                  index = selectionIndex;
+                }
+              });
+              if (index == -1) return;
+              selection.splice(index, 1);
+              resolveAddBox();
             }
-          });
-        }).catch((stravaError) => console.error(stravaError));
-      }).catch((logError) => console.error(logError));
+          }
+        });
+      });
     }
   };
 })();
