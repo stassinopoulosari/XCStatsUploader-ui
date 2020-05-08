@@ -156,6 +156,28 @@
 var mainBlock = (() => {
   //BLOCK — main
 
+  var cache = {};
+
+  (() => {
+    var cacheContents = localStorage.getItem("xu-cacheContents");
+    if (!cacheContents) return;
+
+    cacheContents = JSON.parse(cacheContents);
+    if (!cacheContents.ts || (new Date().getTime() - cacheContents.ts) > (6 * 60 * 60 * 1000)) return;
+
+    cache = cacheContents;
+
+  })();
+
+  var saveCache = () => {
+    cache.ts = new Date().getTime();
+    localStorage.setItem("xu-cacheContents", JSON.stringify(cache));
+  };
+
+  var clearCache = () => {
+    localStorage.clear();
+  };
+
   var createElementFromHTML = function(htmlString) {
     var div = document.createElement('div');
     div.innerHTML = htmlString.trim();
@@ -166,12 +188,25 @@ var mainBlock = (() => {
 
   return {
     startMainBlock: () => {
-      var downloadStravaActivities = firebase.functions().httpsCallable("downloadStravaActivities");
-      var getTwoWeeksOfLogs = firebase.functions().httpsCallable("getTwoWeeksOfLogs");
+      var downloadStravaActivities = () => {
+        if (cache.activities) return Promise.resolve(cache.activities);
+        return firebase.functions().httpsCallable("downloadStravaActivities")();
+      }
+      var getTwoWeeksOfLogs = (data) => {
+        if (cache.logs) return Promise.resolve(cache.logs);
+        return firebase.functions().httpsCallable("getTwoWeeksOfLogs")(data);
+      };
 
       var $downloadingHeader = document.querySelector("#xu-cl-stravaDownloadingHeader"),
+        $downloadingInfo = document.querySelector("#xu-cl-downloadingInfo"),
         $activitiesList = document.querySelector("#xu-cl-stravaActivitiesList"),
-        $activitiesSummary = document.querySelector("#xu-cl-activitiesSummary");
+        $activitiesSummary = document.querySelector("#xu-cl-activitiesSummary"),
+        $clearCacheButton = document.querySelector("#xu-cl-clearCacheButton");
+
+      $clearCacheButton.onclick = () => {
+        clearCache();
+        location.reload();
+      }
 
       $downloadingHeader.classList.remove("d-none");
       $activitiesSummary.classList.add("d-none");
@@ -179,11 +214,23 @@ var mainBlock = (() => {
         activityTemplate = document.querySelector("#template-activity").innerHTML;
       Promise.all([getTwoWeeksOfLogs({
           date: new Date()
+        }).then((logData) => {
+          $downloadingInfo.innerText += " XCStats downloading done. Downloading Strava activities...";
+          cache.logs = logData;
+          return logData;
         }).catch((logError) => console.error(logError)),
-        downloadStravaActivities().catch((stravaError) => console.error(stravaError))
+        downloadStravaActivities().then((stravaData) => {
+          $downloadingInfo.innerText += " Strava downloading done. Downloading XCStats logs...";
+          cache.activities = stravaData;
+          return stravaData;
+        }).catch((stravaError) => console.error(stravaError))
       ]).then((values) => {
         var logData = values[0],
-        stravaData = values[1];
+          stravaData = values[1];
+
+        saveCache();
+
+        $downloadingInfo.innerText += "";
 
         //Logs
 
@@ -270,7 +317,7 @@ var mainBlock = (() => {
           if (selection.length == 0) {
             [].slice.call(document.querySelectorAll(".addBox")).forEach(($el) => {
               $el.disabled = true;
-              $el.classList.add("invisible")
+              $el.classList.add("d-none")
             });
           } else {
             document.querySelector(".addBox[data-date='" + selection[0].date + "']").classList.remove("invisible");
@@ -281,7 +328,14 @@ var mainBlock = (() => {
         [].slice.call(document.querySelectorAll(".addBox")).forEach(($el) => {
           $el.onclick = (e) => {
             e.preventDefault();
-            uploadBlock.startUploadBlock(selection, dateIndexedLogs);
+            var onSuccess = () => {
+              var date = selection[0].date;
+              [cache.logs.data.lastWeekLog, cache.logs.data.thisWeekLog].forEach((z) => z.forEach((log) => {
+                if (log.date == date) log.log = log.log[0] == 1 ? [1, 1] : [1, 0];
+              }));
+              saveCache();
+            };
+            uploadBlock.startUploadBlock(selection, dateIndexedLogs, onSuccess);
           }
         });
 
@@ -349,7 +403,7 @@ var mainBlock = (() => {
 var uploadBlock = (() => {
   //BLOCK — Upload
   return {
-    startUploadBlock: (selection, dateIndexedLogs) => {
+    startUploadBlock: (selection, dateIndexedLogs, onSuccess) => {
       var $uploadForm = document.querySelector("#xu-uploadForm"),
         $uploadContainer = document.querySelector("#xu-uploadInterface"),
         $main = document.querySelector("#xu-cl-main"),
@@ -484,6 +538,7 @@ var uploadBlock = (() => {
           // console.log(message);
           if (message.data.includes("success:::")) {
             $formControls.$success.classList.remove("d-none");
+            onSuccess();
             setTimeout(() => packUp(), 1000);
           }
         }).catch((e) => error(e));
