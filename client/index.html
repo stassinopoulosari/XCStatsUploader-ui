@@ -108,6 +108,10 @@
           <input type="text" id="xu-upload-title" class="form-control">
         </div>
         <div class="form-group">
+          <label>Workout</label>
+          <select id="xu-upload-workout" class="form-control"></select>
+        </div>
+        <div class="form-group">
           <label>Distance</label>
           <span class="form-control btn xu-formInfo xu-btn-leftAlign" id="xu-upload-distance"></span>
         </div>
@@ -177,7 +181,7 @@
   <div class="d-none">
     <div id="template-day">
       <ul class="list-group-item">
-        <h3>%date% <button class="btn btn-success invisible addBox" disabled data-date="%date%">Upload</button></h3>
+        <h3>%date% <button class="btn btn-success d-none addBox" disabled data-date="%date%">Upload</button></h3>
         <ul class="list-group">%activities%</ul>
       </ul>
     </div>

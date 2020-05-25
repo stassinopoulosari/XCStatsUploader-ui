@@ -191,10 +191,14 @@ var mainBlock = (() => {
       var downloadStravaActivities = () => {
         if (cache.activities) return Promise.resolve(cache.activities);
         return firebase.functions().httpsCallable("downloadStravaActivities")();
-      }
-      var getTwoWeeksOfLogs = (data) => {
+      },
+       getTwoWeeksOfLogs = (data) => {
         if (cache.logs) return Promise.resolve(cache.logs);
         return firebase.functions().httpsCallable("getTwoWeeksOfLogs")(data);
+      },
+      getWorkouts = () => {
+        if(cache.workouts) return promise.resolve(cache.workouts);
+        return firebase.functions().httpsCallable("getWorkouts")();
       };
 
       var $downloadingHeader = document.querySelector("#xu-cl-stravaDownloadingHeader"),
@@ -215,22 +219,32 @@ var mainBlock = (() => {
       Promise.all([getTwoWeeksOfLogs({
           date: new Date()
         }).then((logData) => {
-          $downloadingInfo.innerText += " XCStats downloading done. Downloading Strava activities...";
+          $downloadingInfo.innerText += " XCStats downloading done. Downloading Strava activities...\n";
           cache.logs = logData;
           return logData;
         }).catch((logError) => console.error(logError)),
         downloadStravaActivities().then((stravaData) => {
-          $downloadingInfo.innerText += " Strava downloading done. Downloading XCStats logs...";
+          $downloadingInfo.innerText += " Strava downloading done. Downloading XCStats logs...\n";
           cache.activities = stravaData;
           return stravaData;
-        }).catch((stravaError) => console.error(stravaError))
+        }).catch((stravaError) => console.error(stravaError)),
+        getWorkouts().then((workoutsData) => {
+          $downloadingInfo.innerText += " Workouts downloading done. Downloading XCStats logs & Strava activities...\n";
+          cache.workoutsData = workoutsData;
+          return workoutsData;
+        }).catch((workoutsError) => {
+          console.error(workoutsError);
+        })
       ]).then((values) => {
         var logData = values[0],
-          stravaData = values[1];
+          stravaData = values[1],
+          workoutsData = values[2];
+
+          console.log(workoutsData);
 
         saveCache();
 
-        $downloadingInfo.innerText += "";
+        $downloadingInfo.innerHTML = "";
 
         //Logs
 
@@ -314,13 +328,14 @@ var mainBlock = (() => {
 
         var selection = [];
         var resolveAddBox = () => {
+          console.log(selection);
           if (selection.length == 0) {
             [].slice.call(document.querySelectorAll(".addBox")).forEach(($el) => {
               $el.disabled = true;
               $el.classList.add("d-none")
             });
           } else {
-            document.querySelector(".addBox[data-date='" + selection[0].date + "']").classList.remove("invisible");
+            document.querySelector(".addBox[data-date='" + selection[0].date + "']").classList.remove("d-none");
             document.querySelector(".addBox[data-date='" + selection[0].date + "']").disabled = false;
           }
         };
@@ -335,7 +350,7 @@ var mainBlock = (() => {
               }));
               saveCache();
             };
-            uploadBlock.startUploadBlock(selection, dateIndexedLogs, onSuccess);
+            uploadBlock.startUploadBlock(selection, dateIndexedLogs, workoutsData, onSuccess);
           }
         });
 
@@ -403,7 +418,7 @@ var mainBlock = (() => {
 var uploadBlock = (() => {
   //BLOCK — Upload
   return {
-    startUploadBlock: (selection, dateIndexedLogs, onSuccess) => {
+    startUploadBlock: (selection, dateIndexedLogs, workouts, onSuccess) => {
       var $uploadForm = document.querySelector("#xu-uploadForm"),
         $uploadContainer = document.querySelector("#xu-uploadInterface"),
         $main = document.querySelector("#xu-cl-main"),
@@ -411,6 +426,7 @@ var uploadBlock = (() => {
           $cancelButton: "xu-cancelUploadButton",
           $error: "xu-upload-error",
           $title: "xu-upload-title",
+          $workout: "xu-upload-workout",
           $distance: "xu-upload-distance",
           $time: "xu-upload-time",
           $description: "xu-upload-description",
@@ -424,6 +440,7 @@ var uploadBlock = (() => {
         // console.log("packing up");
         $formControls.$submitButton.disabled = false;
         $formControls.$success.classList.add("d-none");
+        $formControls.$workout.innerHTML = "";
         [$formControls.$effortGroup, $formControls.$feelGroup].forEach(($group) => {
           $group.removeAttribute("data-selected");
           [].slice.call($group.children).forEach(($child) => $child.classList.remove("active"));
@@ -440,19 +457,14 @@ var uploadBlock = (() => {
 
 
       $formControls.$cancelButton.onclick = packUp;
-      // console.log($formControls.$cancelButton, packUp);
 
       var postToXCStats = firebase.functions().httpsCallable("postToXCStats");
       var date = selection[0].date;
-      // console.log(selection, dateIndexedLogs[date]);
 
       var activityCollection = selection;
       if (!activityCollection || activityCollection.length == 0) return;
 
       var useElapsedTime = false;
-
-      //All activities should be the same type
-      //All activities should already be the same day
 
       var date = activityCollection[0].date;
       var type = activityCollection[0].activity.type;
@@ -463,6 +475,12 @@ var uploadBlock = (() => {
       } else {
         title += " - " + date;
       }
+
+      var workoutHTML = [["0","No workout"],...workouts.data].map((workout) => {
+        return "<option value=\"" + workout[0] +"\">" + workout[1] + "</option>";
+      }).join("");
+
+      $formControls.$workout.innerHTML = workoutHTML;
 
       console.log(activityCollection);
 
@@ -521,6 +539,7 @@ var uploadBlock = (() => {
 
         var payload = {
           recordIndex: dateIndexedLogs[date],
+          workout: $formControls.$workout.value,
           title: $formControls.$title.value,
           date: date,
           minutes: totalMins,
