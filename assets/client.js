@@ -482,6 +482,16 @@ var uploadBlock = (() => {
 
       $formControls.$workout.innerHTML = workoutHTML;
 
+      $formControls.$workout.onchange = () => {
+        var newValue = $formControls.$workout.value;
+        [].slice.call($formControls.$workout.children).forEach(($option) => {
+          if($option.value == newValue) {
+            var newTitle = $option.innerText;
+            $formControls.$title.value = newTitle;
+          }
+        });
+      };
+
       console.log(activityCollection);
 
       var description = activityCollection.map((activity, i) => "Map" +
